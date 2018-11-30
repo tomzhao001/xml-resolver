@@ -1,0 +1,7 @@
+node_modules/
+
+# XML Test File Location
+xml/
+
+# MAC OS DS Store file
+.DS_Store
