@@ -1,31 +1,38 @@
+const xmlResolver = require('./xmlresolver/xmlResolver');
+const config = require('./xmlresolver/config');
+const async = require('async');
 
-var xmlExecutor = require('./xmlresolver/resolveXml')
-var async = require('async')
+let xmlExecFuncList = [];
 
-let xmlPathList = [
-  './xml/testFile-0.xml',
-  './xml/testFile-1.xml',
-  './xml/testFile-2.xml',
-  './xml/testFile-3.xml'
-]
-let csvPath = './resolveResults.csv'
-let vendorName = 'Vendor B'
+config.getConfigJsonObj().then((configObj) => {
+  let xmlPath = configObj.xmlInputPath;
+  let csvPath = configObj.csvOutputPath;
+  let vendorNameList = configObj
 
-console.log('Start programme.....')
+  /**
+   * Push async functions into a FunctionList, 
+   * and use async.series to pop out and execute them.
+   */
+  xmlPathList.forEach((xmlPath) => {
+    xmlExecFuncList.push(async () => {
+      console.log('Start resolving the xml: ' + xmlPath + ', Vendor Name: ' + vendorName);
+      await xmlResolver.resolveXml(xmlPath, csvPath, vendorName);
+      return xmlPath;
+    });
+  });
 
-let xmlExecFuncList = []
-
-for (let i = 0; i < xmlPathList.length; i++) {
-  console.log('xmlPath', xmlPathList[i])
-  xmlExecFuncList.push(async () => {
-    console.log('Start resolving the xml: ' + xmlPathList[i] + ', Vendor Name: ' + vendorName)
-    await xmlExecutor.executeXml(xmlPathList[i], csvPath, vendorName)
-    return xmlPathList[i]
+  async.series(xmlExecFuncList, (err, results) => {
+    if (!err) {
+      console.log('Finish processing with results: ' + results);
+    }
   })
-}
 
-async.series(xmlExecFuncList, (err, results) => {
-  if (!err) {
-    console.log('Finish processing with results: ' + results)
-  }
-})
+}).catch((exception) => {
+  console.error(`Error on reading the config file, please check the details below.`);
+  throw exception;
+});
+
+
+
+
+

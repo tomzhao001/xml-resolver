@@ -1,0 +1,17 @@
+{
+  "xmlInputPath": "./xml",
+
+  "csvOutputPath": "./resolveResults.csv",
+
+  "vendorNameList": [
+    "Vendor A",
+    "Vendor B",
+    "Vendor C"
+  ],
+
+  "csvHeader": {
+    "xpathName": "XPath",
+    "vendorName": "Vendor B"
+  }
+
+}

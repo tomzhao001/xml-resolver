@@ -1,61 +1,58 @@
-var _ = require('lodash')
-var xpath = require('xpath')
-var constent = require('./const')
+const _ = require('lodash');
+const xpath = require('xpath');
+const config = require('./config');
 
-module.exports.mergeXPathWithHitCount = mergeXPathWithHitCount
-module.exports.listFullXPathForEndNodes = listFullXPathForEndNodes
-
-function mergeXPathWithHitCount (originalMapArray, newXPathList, vendorName) {
+function updateCsvMapArrayWithNewXPath (currentCsvMapArray, newXPathList, vendorName) {
   newXPathList.forEach((newXPathString) => {
-    let hitCount = 0
-    originalMapArray.forEach((newCsvMap) => {
-      if (String(_.get(newCsvMap, 'XPath')) === String(newXPathString)) {
-        console.log('XPath hit !!!')
-        _.set(newCsvMap, vendorName, String(Number(_.get(newCsvMap, vendorName)) + 1))
-        hitCount++
+    let hitTimes = 0;
+    currentCsvMapArray.forEach((csvMap) => {
+      if (String(_.get(csvMap, 'XPath')) === String(newXPathString)) {
+        console.log('XPath already exist, hit times + 1')
+        _.set(csvMap, vendorName, String(Number(_.get(csvMap, vendorName)) + 1))
+        hitTimes++
       }
-    })
-    if (hitCount < 1) {
-      let newCsvMapRow = '{'
-      newCsvMapRow += '"' + constent.XPATH_HEADER + '":"' + newXPathString + '"'
-      constent.VENDOR_HEADER_LIST.forEach((vendor) => {
-        let defaultHitCount = (vendor === vendorName) ? '1' : '0'
-        newCsvMapRow += ',"' + vendor + '":"' + defaultHitCount + '"'
-      })
-      newCsvMapRow += '}'
-      console.log('New XPath found: ', newCsvMapRow)
-      originalMapArray = _.concat(originalMapArray, JSON.parse(newCsvMapRow))
+    });
+    if (hitTimes < 1) {
+      let newCsvMapRow = '{"' + config.XPATH_HEADER + '":"' + newXPathString + '"';
+      config.VENDOR_HEADER_LIST.forEach((vendor) => {
+        newCsvMapRow += ',"' + vendor + '":"' + (vendor === vendorName) ? '1' : '0' + '"';
+      });
+      newCsvMapRow += '}';
+      console.log(`New XPath found: ${newCsvMapRow}`);
+      let currentCsvMapArray = _.concat(currentCsvMapArray, JSON.parse(newCsvMapRow));
     }
-  })
-  console.log('New CSV Map Array: ', originalMapArray)
-  return originalMapArray
+  });
+  console.log(`CSV Map Array Updated: ${currentCsvMapArray}`);
+  return currentCsvMapArray;
 }
 
 function listFullXPathForEndNodes (domParser) {
-  let newXPathList = []
-  let nodes = xpath.evaluate('//*', domParser, null, xpath.XPathResult.ANY_TYPE, null)
-  let currentNode = nodes.iterateNext()
-  let index = 0
+  let newXPathList = [];
+  let nodes = xpath.evaluate('//*', domParser, null, xpath.XPathResult.ANY_TYPE, null);
+  let currentNode = nodes.iterateNext();
+  let index = 0;
   while (currentNode) {
     // localName: 返回当前节点的名称或指定节点集中的第一个节点 - 不带有命名空间前缀。
     // firstChild: 节点下面的值
     if (currentNode.firstChild && String(currentNode.firstChild).trim() !== '') {
       // Root node found!!
-      newXPathList[index] = appendParentXPath(currentNode)
-      index++
+      newXPathList[index] = appendParentXPath(currentNode);
+      index++;
     }
-    currentNode = nodes.iterateNext()
+    currentNode = nodes.iterateNext();
   }
-  console.log('newXPath = ', newXPathList)
-  return newXPathList
+  return newXPathList;
 }
 
 function appendParentXPath (node) {
   if (node.parentNode.localName && node.parentNode.localName.trim() !== '') {
-    // console.log('Found parent node: ' + node.parentNode.localName);
-    return appendParentXPath(node.parentNode) + '/' + node.localName
+    // Parent node found
+    return appendParentXPath(node.parentNode) + '/' + node.localName;
   } else {
-    // console.log('Found top node: ' + node.localName);
-    return '/' + node.localName
+    // Top node found
+    return '/' + node.localName;
   }
 }
+
+module.exports.updateCsvMapArrayWithNewXPath = updateCsvMapArrayWithNewXPath;
+module.exports.listFullXPathForEndNodes = listFullXPathForEndNodes;
