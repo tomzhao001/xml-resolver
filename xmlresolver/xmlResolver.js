@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const fs = require('fs');
+const async = require('async');
 const fileUtils = require('./fileUtils');
-const config = require('./config');
 const xpathUtils = require('./xpathUtils');
 
 async function resolveXmlsFromConfig (configObj) {
@@ -9,19 +9,20 @@ async function resolveXmlsFromConfig (configObj) {
     if (err) {
       throw err;
     }
-    resolveXmlsFromList(files);
+    resolveXmlsFromList(files, configObj);
   });
 }
 
-async function resolveXmlsFromList (xmlFileList, csvHeader, vendorNameList) {
+async function resolveXmlsFromList (xmlFileList, configObj) {
+  let xmlExecFuncList;
   /**
    * Push async functions into a FunctionList, 
    * and use async.series to pop out and execute them.
    */
   xmlFileList.forEach((xmlFileName) => {
     xmlExecFuncList.push(async () => {
-      console.log('Start resolving the xml: ' + xmlFileName + ', Vendor Name: ' + csvHeader.vendorName);
-      await this.resolveXml(xmlFileName, csvPath, csvHeader, vendorNameList);
+      console.log('Start resolving the xml: ' + xmlFileName + ', Vendor Name: ' + configObj.csvHeader.vendorName);
+      await resolveXml(xmlFileName, configObj);
       return xmlFileName;
     });
   });
@@ -32,20 +33,20 @@ async function resolveXmlsFromList (xmlFileList, csvHeader, vendorNameList) {
   });
 }
 
-async function resolveXml (xmlPath, csvPath, csvHeader, vendorNameList) {
+async function resolveXml (xmlFileName, configObj) {
   // Validate vendorName
-  if (!_.includes(vendorNameList, csvHeader.vendorName)) {
-    console.log(`Incorrect Vendor Name: ${csvHeader.vendorName}, please check the config file.`);
+  if (!_.includes(configObj.vendorNameList, configObj.csvHeader.vendorName)) {
+    console.log(`Incorrect Vendor Name: ${configObj.csvHeader.vendorName}, please check the config file.`);
     return;
   }
 
   // STEP 1: Read previous CSV data, it will be the base of the new CSV
   console.log('Start STEP 1 of 5: Read previous CSV data, it will be the base of the new CSV');
-  let newCsvMapArray = await fileUtils.readPreviousCsvFileAndReturnCscMappedArray(csvPath);
+  let newCsvMapArray = await fileUtils.readPreviousCsvFileAndReturnCsvMappedArray(configObj.csvOutputPath);
 
   // STEP 2:  Read new XML File
   console.log('Start STEP 2 of 5:  Read new XML File');
-  let xmldom = await fileUtils.readAndParseXmlFile(xmlPath);
+  let xmldom = await fileUtils.readAndParseXmlFile(configObj.xmlInputPath);
 
   // STEP 3: List Full XPath with all end nodes
   console.log('Start STEP 3 of 5: List Full XPath with all end nodes');
@@ -53,11 +54,11 @@ async function resolveXml (xmlPath, csvPath, csvHeader, vendorNameList) {
 
   // STEP 4: Compare current xpath and previous xpath (newXPathMapArray)
   console.log('Start STEP 4 of 5: Compare current xpath and previous xpath (newXPathMapArray)');
-  newCsvMapArray = xpathUtils.updateCsvMapArrayWithNewXPath(newCsvMapArray, newXPathList, vendorName);
+  newCsvMapArray = xpathUtils.updateCsvMapArrayWithNewXPath(newCsvMapArray, newXPathList, configObj);
 
   // STEP 5: Write the new CSV map array back to the CSV file
   console.log('Start STEP 5 of 5: Write the new CSV map array back to the CSV file');
-  await fileUtils.writeToCsv(newCsvMapArray, csvPath);
+  await fileUtils.writeToCsv(newCsvMapArray, configObj.csvOutputPath);
 }
 
-module.exports.resolveXml = resolveXml;
+module.exports.resolveXmlsFromConfig = resolveXmlsFromConfig;

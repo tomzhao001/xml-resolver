@@ -1,20 +1,20 @@
 const _ = require('lodash');
 const xpath = require('xpath');
-const config = require('./config');
 
-function updateCsvMapArrayWithNewXPath (currentCsvMapArray, newXPathList, vendorName) {
+function updateCsvMapArrayWithNewXPath (currentCsvMapArray, newXPathList, configObj) {
+  let vendorName = configObj.csvHeader.vendorName;
   newXPathList.forEach((newXPathString) => {
     let hitTimes = 0;
     currentCsvMapArray.forEach((csvMap) => {
       if (String(_.get(csvMap, 'XPath')) === String(newXPathString)) {
-        console.log('XPath already exist, hit times + 1')
-        _.set(csvMap, vendorName, String(Number(_.get(csvMap, vendorName)) + 1))
-        hitTimes++
+        console.log('XPath already exist, hit times + 1');
+        _.set(csvMap, vendorName, String(Number(_.get(csvMap, vendorName)) + 1));
+        hitTimes++;
       }
     });
     if (hitTimes < 1) {
-      let newCsvMapRow = '{"' + config.XPATH_HEADER + '":"' + newXPathString + '"';
-      config.VENDOR_HEADER_LIST.forEach((vendor) => {
+      let newCsvMapRow = '{"XPath": "' + newXPathString + '"';
+      configObj.vendorNameList.forEach((vendor) => {
         newCsvMapRow += ',"' + vendor + '":"' + (vendor === vendorName) ? '1' : '0' + '"';
       });
       newCsvMapRow += '}';

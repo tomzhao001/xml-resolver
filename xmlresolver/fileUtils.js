@@ -3,11 +3,11 @@ const fastCsv = require('fast-csv');
 const DOMParser = require('xmldom').DOMParser;
 const _ = require('lodash');
 
-async function readPreviousCsvFileAndReturnCscMappedArray (inputCsvPath) {
+async function readPreviousCsvFileAndReturnCsvMappedArray (csvOutputPath) {
   return new Promise((resolve, reject) => {
     let csvMapArray = [];
-    if (fs.existsSync(inputCsvPath)) {
-      let csvReadStream = fs.createReadStream(inputCsvPath);
+    if (fs.existsSync(csvOutputPath)) {
+      let csvReadStream = fs.createReadStream(csvOutputPath);
       let csvStream = fastCsv({
         headers: true
       }).on('data', (fastCsvData) => {
@@ -18,16 +18,15 @@ async function readPreviousCsvFileAndReturnCscMappedArray (inputCsvPath) {
       });
       csvReadStream.pipe(csvStream);
     } else {
-      // If not exist, create a new one
-      
-      reject(new Error(`CSV not found in path ${inputCsvPath}`));
+      // TODO: If not exist, create a new csv file
+      reject(new Error(`CSV not found in path ${csvOutputPath}`));
     }
   });
 }
 
-async function readAndParseXmlFile (inputXmlPath) {
+async function readAndParseXmlFile (xmlInputPath) {
   return new Promise((resolve, reject) => {
-    fs.readFile(inputXmlPath, 'utf-8', (err, inputXmlData) => {
+    fs.readFile(xmlInputPath, 'utf-8', (err, inputXmlData) => {
       if (err) {
         reject(err);
       }
@@ -36,9 +35,9 @@ async function readAndParseXmlFile (inputXmlPath) {
       let xmldom = new DOMParser({
         locator: myLocator,
         errorHandler: {
-          warning: (msg) => { xmlParseErrorMessage.set('warning', msg) },
-          error: (msg) => { xmlParseErrorMessage.set('error', msg) },
-          fatalError: (msg) => { xmlParseErrorMessage.set('fatalError', msg) }
+          warning: (msg) => { xmlParseErrorMessage.set('warning', msg); },
+          error: (msg) => { xmlParseErrorMessage.set('error', msg); },
+          fatalError: (msg) => { xmlParseErrorMessage.set('fatalError', msg); }
         }
       }).parseFromString(inputXmlData);
       // Show XML Parse Error Message
@@ -67,6 +66,6 @@ async function writeToCsv (csvDataToWrite, csvPath) {
   })
 }
 
-module.exports.readPreviousCsvFileAndReturnCscMappedArray = readPreviousCsvFileAndReturnCscMappedArray;
+module.exports.readPreviousCsvFileAndReturnCsvMappedArray = readPreviousCsvFileAndReturnCsvMappedArray;
 module.exports.readAndParseXmlFile = readAndParseXmlFile;
 module.exports.writeToCsv = writeToCsv;
